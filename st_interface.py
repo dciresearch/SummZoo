@@ -62,9 +62,6 @@ ModelType = st.selectbox(
     help="На данный момент доступны только экстрактивные подходы",
 )
 
-CompRanker = None
-MMR = None
-
 
 def weight_slider(name, additional_info=""):
     weight = st.slider(
