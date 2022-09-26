@@ -243,8 +243,13 @@ def check_and_normalize_weights(weights):
     return weights / weights.sum()
 
 
+def optimize_processors(list_of_processors, proccessor_weights):
+    return zip(*((proc, w) for proc, w in zip(list_of_processors, proccessor_weights) if w > 0))
+
+
 class CompositeTextRank(MarkovSummarizer):
-    def __init__(self, bias_builders, transition_builders, bias_weights=None, transition_weights=None, text_splitter=sent_tokenize, tokenizer=word_tokenize):
+    def __init__(self, bias_builders, transition_builders, bias_weights=None,
+                 transition_weights=None, text_splitter=sent_tokenize, tokenizer=word_tokenize):
         super().__init__(tokenizer)
         self.bias_builders = bias_builders
         self.transition_builders = transition_builders
@@ -257,6 +262,10 @@ class CompositeTextRank(MarkovSummarizer):
         if self.transition_weights:
             self.transition_weights = check_and_normalize_weights(
                 self.transition_weights)
+        self.transition_builders, self.transition_weights = optimize_processors(
+            self.transition_builders, self.transition_weights)
+        self.bias_builders, self.bias_weights = optimize_processors(
+            self.transition_builders, self.transition_weights)
 
     def split_text(self, text):
         return self.text_splitter(text)

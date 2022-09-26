@@ -5,6 +5,13 @@ import re
 from nltk.corpus import stopwords
 from .hf_senttransformer import HuggingfaceSentTransformer
 
+# in case if python version < 3.8.3
+try:
+    import pickle5 as pickle
+except ImportError as e:
+    pass
+
+
 DEFAULT_LANGUAGE_DETECTION_MODEL_PATH = "./models/fasttext/lid.176.ftz"
 ignored_wds = set(stopwords.words("english"))
 

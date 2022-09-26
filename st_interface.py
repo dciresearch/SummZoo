@@ -62,6 +62,10 @@ ModelType = st.selectbox(
     help="На данный момент доступны только экстрактивные подходы",
 )
 
+if not files:
+    st.markdown("## Пожалуйста, загрузите файлы")
+    st.stop()
+
 
 def weight_slider(name, additional_info=""):
     weight = st.slider(
@@ -74,6 +78,10 @@ def weight_slider(name, additional_info=""):
     )
     return weight
 
+
+if ModelType == "ClusterVote" and len(documents) < 2:
+    st.markdown("## Доступно только для 2 документов и более")
+    st.stop()
 
 ce, c1, ce, c2, ce = st.columns(
     [0.07, 2, 0.07, 5, 0.07])
@@ -113,6 +121,8 @@ full_text = "\n".join(documents)
 sents = [ru_sent_tokenize(d) for d in documents]
 out_sents = list(flatten(sents))
 
+if len(documents) < 2:
+    clustervote_weight = 0
 
 if ModelType == "Composite TextRank":
     dist_vec = para_vec if dist_vec_type == "BERT" else tfidf_vec
@@ -128,7 +138,6 @@ if ModelType == "Composite TextRank":
     transition_weights = [1, 2*clustervote_weight]
     summarizer = CompositeTextRank(bias_builders, transition_builders,
                                    bias_weights, transition_weights, text_splitter=ru_sent_tokenize, tokenizer=ru_word_tokenize)
-
     ranking = summarizer.rank_text_units(
         sents, documents, damping_factor=damping_factor, query=query)
     scores = ranking
