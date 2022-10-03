@@ -140,7 +140,8 @@ if ModelType == "Composite TextRank":
     bias_weights = [1, 2*query_weight]
     transition_weights = [1-clustervote_weight, clustervote_weight]
     summarizer = CompositeTextRank(bias_builders, transition_builders,
-                                   bias_weights, transition_weights, text_splitter=ru_sent_tokenize, tokenizer=ru_word_tokenize)
+                                   bias_weights, transition_weights,
+                                   text_splitter=ru_sent_tokenize, tokenizer=ru_word_tokenize)
     ranking = summarizer.rank_text_units(
         sents, documents, damping_factor=damping_factor, query=query)
     scores = ranking
