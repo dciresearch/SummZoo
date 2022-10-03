@@ -239,13 +239,14 @@ def flatids_to_nested(ids, nested_lens):
             cur_boundary = next(id_boundaries)
             nested_ids.append([])
         nested_ids[-1].append(idx-last_boundary)
+    # pad for remainder
+    for _ in nested_lens:
+        nested_ids.append([])
     return nested_ids
 
 
 def filter_identical(text_sents, vectorizer_func):
     bad_ids = sorted(find_identical(flatten(text_sents), vectorizer_func))
-    if not bad_ids:
-        return text_sents
     text_lens = (len(sents) for sents in text_sents)
     nested_ids = (set(nested)
                   for nested in flatids_to_nested(bad_ids, text_lens))
