@@ -182,17 +182,16 @@ class EmbeddingSimilarityTransitions(MatrixBuilder):
 
 
 class ClusterVoteTransitions(MatrixBuilder):
-    def __init__(self, tf_idf_vectorizer_function, paraphrase_vectorizer_fun, sentpair_starting_radius,
+    def __init__(self, paraphrase_vectorizer_fun, sentpair_starting_radius,
                  paraphrase_dist_limit) -> None:
         super().__init__()
-        self.tfidf_vectorizer = tf_idf_vectorizer_function
         self.para_vectorizer = paraphrase_vectorizer_fun
         self.sentpair_rad = sentpair_starting_radius
         self.para_distlimit = paraphrase_dist_limit
 
     def __call__(self, text_units, *args: Any, **kwds: Any) -> Any:
-        labels, _, _, _ = cluster_vote(text_units, self.tfidf_vectorizer,
-                                       self.para_vectorizer, self.sentpair_rad, self.para_distlimit)
+        labels, _, _, _ = cluster_vote(text_units, self.para_vectorizer,
+                                       self.sentpair_rad, self.para_distlimit)
         assert len(labels) == len(text_units), "Lost {} text units".format(
             len(text_units) - len(labels))
         res = doc_sentlabels_to_mat(labels)
@@ -265,7 +264,7 @@ class CompositeTextRank(MarkovSummarizer):
         self.transition_builders, self.transition_weights = optimize_processors(
             self.transition_builders, self.transition_weights)
         self.bias_builders, self.bias_weights = optimize_processors(
-            self.transition_builders, self.transition_weights)
+            self.bias_builders, self.bias_weights)
 
     def split_text(self, text):
         return self.text_splitter(text)

@@ -1,3 +1,5 @@
+import random
+from itertools import accumulate
 from collections import deque, defaultdict, namedtuple, Counter
 from itertools import combinations
 from nltk.tokenize import sent_tokenize
@@ -216,18 +218,41 @@ def pair_sentences(cluster_senttexts, vectorizer_function, mean_distance_limit=0
     return res_tuple(cluster_senttexts, cluster_sentlabels, cluster_sentpower, cluster_dists)
 
 
-def filter_identical(texts, vectorizer_func, eps=1e-5):
+def find_identical(texts, vectorizer_func, eps=1e-5):
     textvects = vectorizer_func(texts).astype(np.float64)
     textdists = pairwise_distances(textvects, metric="euclidean")
     # can't drop self
     np.fill_diagonal(textdists, 1e10)
     to_remove = set(j for i, j in zip(*np.nonzero(np.tril(textdists < eps).T)))
-    return [text for t, text in enumerate(texts) if t not in to_remove]
+    return to_remove
 
 
-def cluster_vote(cluster_texts, tf_idf_vectorizer_function, paraphrase_vectorizer_fun, sentpair_starting_radius,
+def flatids_to_nested(ids, nested_lens):
+    ids = sorted(ids)
+    id_boundaries = accumulate(nested_lens)
+    last_boundary = 0
+    cur_boundary = next(id_boundaries)
+    nested_ids = [[]]
+    for idx in ids:
+        while idx >= cur_boundary:
+            last_boundary = cur_boundary
+            cur_boundary = next(id_boundaries)
+            nested_ids.append([])
+        nested_ids[-1].append(idx-last_boundary)
+    return nested_ids
+
+
+def filter_identical(text_sents, vectorizer_func):
+    bad_ids = sorted(find_identical(flatten(text_sents), vectorizer_func))
+    text_lens = (len(sents) for sents in text_sents)
+    nested_ids = (set(nested)
+                  for nested in flatids_to_nested(bad_ids, text_lens))
+    return [[sent for sid, sent in enumerate(sents) if sid not in bad_nids]
+            for sents, bad_nids in zip(text_sents, nested_ids)]
+
+
+def cluster_vote(cluster_texts, paraphrase_vectorizer_fun, sentpair_starting_radius,
                  paraphrase_dist_limit, paraphrase_metric="cosine", agg_type="max", min_power_thr=0.4, verbose=False):
-    # cluster_texts = filter_identical(cluster_texts, tf_idf_vectorizer_function)
 
     # Clusterize sentences with paraphrase embeddings
     sb_res = pair_sentences(cluster_texts, paraphrase_vectorizer_fun, mean_distance_limit=paraphrase_dist_limit, verbose=verbose,
@@ -250,3 +275,25 @@ def doc_sentlabels_to_mat(doc_labels):
                           if sentlabels[s] >= 0 else 0)
 
     return labelmat
+
+
+def labels_to_clusters(flat_labels, flat_powers):
+    clusters = defaultdict(list)
+    for l, (lab, pow) in enumerate(zip(flat_labels, flat_powers)):
+        clusters[lab].append((l, pow))
+    return clusters
+
+
+def sample_from_clusters(clusters,  selection_threshold=0, seed=1234):
+    sent_ids = []
+    for cl_id in clusters.keys():
+        if cl_id < 0:
+            continue
+        cluster = list((sid, pow)
+                       for sid, pow in clusters[cl_id] if pow >= selection_threshold)
+        if not cluster:
+            continue
+        random.seed(seed)
+        sent_id, _ = random.choice(cluster)
+        sent_ids.append(sent_id)
+    return sent_ids

@@ -1,3 +1,4 @@
+from itertools import accumulate
 from collections import Counter
 import numpy as np
 import json
@@ -245,11 +246,11 @@ def greedy_oracle(doc, gold, drop_stopwords=False, weight_scheme=[1, 1, 1], min_
 
 
 def ends_to_segs(end_list):
-    return [(sum(end_list[:idx]), sum(end_list[:idx]) + end_list[idx]) for idx in range(len(end_list))]
+    return [(start, end) for start, end in zip(accumulate([0]+end_list), accumulate(end_list))]
 
 
 def lens_to_slices(len_list):
-    return [slice(*(sum(len_list[:idx]), sum(len_list[:idx])+len_list[idx])) for idx in range(len(len_list))]
+    return [slice(start, end) for start, end in zip(accumulate([0]+len_list), accumulate(len_list))]
 
 
 def batch_generator(iterable, batch_size=10):
